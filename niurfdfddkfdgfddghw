@@ -794,11 +794,10 @@ end
 
 -- 外部脚本按钮
 local externalScripts = {
-    { "Aimbot", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
+    { "Aimbot 瞄准", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
     { "FPS优化", "https://raw.githubusercontent.com/98krgqg/fps/refs/heads/main/111" },
-    { "飞行", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
+    { "飞行功能", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
     { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" }
-    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" }
 }
 
 for _, scriptData in ipairs(externalScripts) do
