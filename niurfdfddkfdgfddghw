@@ -7,6 +7,7 @@ local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
+local CollectionService = game:GetService("CollectionService") -- 武装色必需服务
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = Workspace.CurrentCamera
@@ -45,8 +46,10 @@ local MIN_CLICK_DELAY = 0.0005
 local Settings = {AutoClick = true, ClickDelay = 0.3} -- 攻速 0.3
 local _G = _G or getfenv(0)._G
 _G.FastAttack = _G.FastAttack ~= nil and _G.FastAttack or true
--- 初始化ToggleStates防止nil错误
+-- 初始化ToggleStates并默认开启自动V3
 _G.ToggleStates = _G.ToggleStates or {}
+_G.ToggleStates["自动V3"] = true -- 默认开启自动V3
+_G.AutoBuso = _G.AutoBuso or true -- 默认开启自动武装色霸气
 
 -- Helper
 local function SafeWaitForChild(parent, childName, timeout)
@@ -203,6 +206,8 @@ task.spawn(function()
 end)
 
 -- 自动 v4
+local autoV4State = true -- 默认开启自动V4
+local autoV4Task = nil
 local function callAwakeningRemote()
     -- 1. 确保获取最新的本地玩家实例（复活后实例可能刷新）
     local localPlayer = game.Players.LocalPlayer
@@ -231,6 +236,16 @@ local function callAwakeningRemote()
     end
 end
 
+-- 自动V4默认启动
+if autoV4State then
+    autoV4Task = task.spawn(function()
+        while autoV4State do
+            callAwakeningRemote()
+            task.wait(1)
+        end
+    end)
+end
+
 -- 监听玩家复活事件（CharacterAdded 事件在复活/重生时触发）
 local function onCharacterAdded(character)
     -- 等待角色完全加载（确保Humanoid等核心组件就绪）
@@ -246,6 +261,75 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character)
 end
 localPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+-- 自动武装色霸气核心逻辑
+local isDead = false
+local function activateBusoIfNeeded(char)
+    if not char or not _G.AutoBuso then return end
+    
+    -- 确保角色存活且有人类oid
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        isDead = true
+        return
+    end
+    
+    -- 检测到角色从死亡变为存活（复活）
+    if isDead then
+        isDead = false
+        -- 复活后短暂延迟，等角色加载完成
+        task.wait(0.5)
+    end
+    
+    -- 激活武装色的核心条件
+    if CollectionService:HasTag(char, "Buso") and not char:FindFirstChild("HasBuso") then
+        local success, err = pcall(function()
+            local commRemote = ReplicatedStorage:FindFirstChild("Remotes"):FindFirstChild("CommF_")
+            if commRemote then
+                commRemote:InvokeServer("Buso")
+            end
+        end)
+        if not success then
+            warn("激活武装色失败:", err)
+        end
+    end
+end
+
+-- 1. 每帧检测（基础逻辑）
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    activateBusoIfNeeded(char)
+end)
+
+-- 2. 监听角色加载事件（专门针对复活/角色切换）
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    isDead = false -- 角色加载完成，标记为存活
+    -- 复活后延迟检测，确保角色完全加载
+    task.wait(1)
+    activateBusoIfNeeded(newChar)
+end)
+
+-- 自动V3默认启动
+local autoV3Task = nil
+local function callRaceV3Remote()
+    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+    if not Remotes then return end
+    local CommE = Remotes:FindFirstChild("CommE")
+    if not CommE then return end
+    pcall(function()
+        CommE:FireServer("ActivateAbility")
+    end)
+end
+
+if _G.ToggleStates["自动V3"] then
+    autoV3Task = task.spawn(function()
+        while _G.ToggleStates["自动V3"] do
+            callRaceV3Remote()
+            task.wait(1)
+        end
+        autoV3Task = nil
+    end)
+end
 
 -- 移动加速
 getfenv().translateSpeed = 50
@@ -272,12 +356,12 @@ local function enableTranslateAccel(enabled)
     end
 end
 
--- ESP
+-- ESP（默认开启所有功能）
 local ESPConfig = {
-    MainSwitch = false,
-    ShowNameDistance = false,
-    ShowTracer = false,
-    ShowHealth = false
+    MainSwitch = true, -- ESP总开关默认开启
+    ShowNameDistance = true, -- 名字距离默认开启
+    ShowTracer = true, -- 射线默认开启
+    ShowHealth = true -- 血量默认开启
 }
 
 local ESPElements = {}
@@ -447,6 +531,9 @@ local function UpdateAllESP()
     end
 end
 
+-- ESP自动初始化
+UpdateAllESP()
+
 Players.PlayerAdded:Connect(function(player)
     if player == LocalPlayer then return end
     if player.Character then
@@ -533,19 +620,17 @@ Window:EditOpenButton({
 -- 创建标签页
 local Tabs = {}
 do
-    Tabs.AttackTab = Window:Tab({ Title = "攻击设置", Icon = "sword" })
+    Tabs.AttackTab = Window:Tab({ Title = "战斗参数", Icon = "sword" }) -- 攻击设置→战斗参数
     Tabs.MovementTab = Window:Tab({ Title = "移动设置", Icon = "run" })
     Tabs.ESPTab = Window:Tab({ Title = "ESP设置", Icon = "eye" })
     Tabs.TeleportTab = Window:Tab({ Title = "传送功能", Icon = "teleport" })
     Tabs.ScriptsTab = Window:Tab({ Title = "外部脚本", Icon = "code" })
 end
 
--- ===================== 主功能标签页 =====================
-
--- ===================== 攻击设置标签页 =====================
+-- ===================== 战斗参数标签页 =====================
 Tabs.AttackTab:Paragraph({
-    Title = "攻击参数",
-    Desc = "调整攻击相关设置",
+    Title = "战斗参数",
+    Desc = "调整攻击、武装色等战斗相关设置",
     Image = "sword",
     ImageSize = 40,
     Color = "Red"
@@ -614,48 +699,26 @@ Tabs.AttackTab:Toggle({
     end
 })
 
--- ===================== 移动设置标签页 =====================
-Tabs.MovementTab:Paragraph({
-    Title = "移动参数",
-    Desc = "调整移动相关设置",
-    Image = "run",
-    ImageSize = 40,
-    Color = "Green"
-})
-
--- 移动加速数值
-Tabs.MovementTab:Slider({
-    Title = "移动加速强度",
-    Desc = "调整移动速度倍率（1-2000）",
-    Value = {
-        Min = 1,
-        Max = 2000,
-        Default = 50,
-    },
-    Callback = function(value)
-        getfenv().translateSpeed = value
-        WindUI:Notify({ Title = "移动加速", Content = "强度已设置为: " .. value, Duration = 1.5 })
-    end
-})
-
--- 移动加速开关
-Tabs.MovementTab:Toggle({
-    Title = "移动加速开关",
-    Desc = "开启/关闭移动加速功能",
-    Value = false,
+-- 自动武装色霸气UI开关（默认开启）
+Tabs.AttackTab:Toggle({
+    Title = "自动武装色霸气",
+    Desc = "自动保持武装色开启（含复活自动重开）",
+    Value = _G.AutoBuso,
     Callback = function(state)
-        enableTranslateAccel(state)
-        WindUI:Notify({ Title = "移动加速", Content = state and "已开启" or "已关闭", Duration = 1.5 })
+        _G.AutoBuso = state
+        WindUI:Notify({
+            Title = "自动武装色霸气",
+            Content = state and "已开启" or "已关闭",
+            Duration = 1.5
+        })
     end
 })
 
--- 自动V4
-local autoV4State = false
-local autoV4Task = nil
+-- 自动V4开关（默认开启）
 Tabs.AttackTab:Toggle({
     Title = "自动 V4",
     Desc = "自动调用觉醒技能",
-    Value = false,
+    Value = autoV4State,
     Callback = function(state)
         autoV4State = state
         if autoV4Task then task.cancel(autoV4Task); autoV4Task = nil end
@@ -673,21 +736,10 @@ Tabs.AttackTab:Toggle({
     end
 })
 
--- 自动V3
-local autoV3Task = nil
-local function callRaceV3Remote()
-    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    if not Remotes then return end
-    local CommE = Remotes:FindFirstChild("CommE")
-    if not CommE then return end
-    pcall(function()
-        CommE:FireServer("ActivateAbility")
-    end)
-end
-
+-- 自动V3开关（默认开启）
 Tabs.AttackTab:Toggle({
     Title = "自动V3",
-    Value = false,
+    Value = _G.ToggleStates["自动V3"],
     Callback = function(state)
         _G.ToggleStates["自动V3"] = state
         if autoV3Task then
@@ -724,9 +776,43 @@ Tabs.AttackTab:Input({
     end
 })
 
--- ===================== ESP设置标签页 =====================
+-- ===================== 移动设置标签页 =====================
+Tabs.MovementTab:Paragraph({
+    Title = "移动参数",
+    Desc = "调整移动相关设置",
+    Image = "run",
+    ImageSize = 40,
+    Color = "Green"
+})
 
--- ESP总开关
+-- 移动加速数值
+Tabs.MovementTab:Slider({
+    Title = "移动加速强度",
+    Desc = "调整移动速度倍率（1-2000）",
+    Value = {
+        Min = 1,
+        Max = 2000,
+        Default = 50,
+    },
+    Callback = function(value)
+        getfenv().translateSpeed = value
+        WindUI:Notify({ Title = "移动加速", Content = "强度已设置为: " .. value, Duration = 1.5 })
+    end
+})
+
+-- 移动加速开关
+Tabs.MovementTab:Toggle({
+    Title = "移动加速开关",
+    Desc = "开启/关闭移动加速功能",
+    Value = false,
+    Callback = function(state)
+        enableTranslateAccel(state)
+        WindUI:Notify({ Title = "移动加速", Content = state and "已开启" or "已关闭", Duration = 1.5 })
+    end
+})
+
+-- ===================== ESP设置标签页 =====================
+-- ESP总开关（默认开启）
 Tabs.ESPTab:Toggle({
     Title = "ESP总开关",
     Desc = "控制所有ESP功能的开启/关闭",
@@ -738,7 +824,7 @@ Tabs.ESPTab:Toggle({
     end
 })
 
--- ESP名字距离
+-- ESP名字距离（默认开启）
 Tabs.ESPTab:Toggle({
     Title = "显示名字和距离",
     Desc = "显示玩家名字和距离信息",
@@ -749,7 +835,7 @@ Tabs.ESPTab:Toggle({
     end
 })
 
--- ESP血量
+-- ESP血量（默认开启）
 Tabs.ESPTab:Toggle({
     Title = "显示血量",
     Desc = "显示玩家当前血量",
@@ -760,7 +846,7 @@ Tabs.ESPTab:Toggle({
     end
 })
 
--- ESP射线
+-- ESP射线（默认开启）
 Tabs.ESPTab:Toggle({
     Title = "显示射线",
     Desc = "显示从屏幕中心到玩家的射线",
@@ -772,8 +858,6 @@ Tabs.ESPTab:Toggle({
 })
 
 -- ===================== 传送功能标签页 =====================
-
--- 传送按钮
 local teleportButtons = {
     { "传送一海", function() pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end) end },
     { "传送二海", function() pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end) end },
@@ -794,14 +878,12 @@ for _, btnData in ipairs(teleportButtons) do
 end
 
 -- ===================== 外部脚本标签页 =====================
-
--- 外部脚本按钮（新增Bypasstp功能）
 local externalScripts = {
     { "Aimbot 瞄准", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
     { "FPS优化", "https://raw.githubusercontent.com/98krgqg/fps/refs/heads/main/111" },
     { "飞行功能", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
     { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" },
-    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" } -- 新增的Bypasstp功能
+    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" }
 }
 
 for _, scriptData in ipairs(externalScripts) do
@@ -836,7 +918,7 @@ end)
 pcall(function()
     StarterGui:SetCore("SendNotification",{
         Title = "大牛人脚本",
-        Text = "WindUI 已加载（按 H 键隐藏/显示）",
+        Text = "WindUI 已加载（按 H 键隐藏/显示）\n自动V3/V4/武装色/ESP已默认开启",
         Duration = 5,
     })
 end)
