@@ -45,6 +45,8 @@ local MIN_CLICK_DELAY = 0.0005
 local Settings = {AutoClick = true, ClickDelay = 0.3} -- 攻速 0.3
 local _G = _G or getfenv(0)._G
 _G.FastAttack = _G.FastAttack ~= nil and _G.FastAttack or true
+-- 初始化ToggleStates防止nil错误
+_G.ToggleStates = _G.ToggleStates or {}
 
 -- Helper
 local function SafeWaitForChild(parent, childName, timeout)
@@ -540,8 +542,6 @@ end
 
 -- ===================== 主功能标签页 =====================
 
-
-
 -- ===================== 攻击设置标签页 =====================
 Tabs.AttackTab:Paragraph({
     Title = "攻击参数",
@@ -672,6 +672,7 @@ Tabs.AttackTab:Toggle({
         end
     end
 })
+
 -- 自动V3
 local autoV3Task = nil
 local function callRaceV3Remote()
@@ -707,6 +708,7 @@ Tabs.AttackTab:Toggle({
         end
     end
 })
+
 -- 摄像机距离
 Tabs.AttackTab:Input({
     Title = "摄像机距离",
@@ -721,6 +723,7 @@ Tabs.AttackTab:Input({
         end
     end
 })
+
 -- ===================== ESP设置标签页 =====================
 
 -- ESP总开关
@@ -792,12 +795,13 @@ end
 
 -- ===================== 外部脚本标签页 =====================
 
--- 外部脚本按钮
+-- 外部脚本按钮（新增Bypasstp功能）
 local externalScripts = {
     { "Aimbot 瞄准", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
     { "FPS优化", "https://raw.githubusercontent.com/98krgqg/fps/refs/heads/main/111" },
     { "飞行功能", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
-    { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" }
+    { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" },
+    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" } -- 新增的Bypasstp功能
 }
 
 for _, scriptData in ipairs(externalScripts) do
