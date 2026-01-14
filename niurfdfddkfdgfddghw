@@ -856,9 +856,6 @@ Tabs.ESPTab:Toggle({
 
 -- ===================== 传送功能标签页 =====================
 local teleportButtons = {
-    { "传送一海", function() pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end) end },
-    { "传送二海", function() pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end) end },
-    { "传送三海", function() pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end) end },
     { "天鹅房间", function() TeleportTo(Vector3.new(-287.37, 305.81, 592.98)) end },
     { "豪宅", function() TeleportTo(Vector3.new(2286.93, 15.06, 910.51)) end },
     { "鬼船", function() TeleportTo(Vector3.new(-6496.89795, 89.0350037,-116.509003)) end },
