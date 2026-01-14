@@ -919,7 +919,7 @@ end)
 pcall(function()
     StarterGui:SetCore("SendNotification",{
         Title = "大牛人脚本",
-        Text = "WindUI 已加载（按 H 键隐藏/显示）\n自动V3/V4/武装色/ESP已默认开启",
+        Text = "大牛人加载完成",
         Duration = 5,
     })
 end)
