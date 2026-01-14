@@ -763,7 +763,6 @@ Tabs.AttackTab:Toggle({
 -- 摄像机距离
 Tabs.AttackTab:Input({
     Title = "摄像机距离",
-    Desc = "调整视角距离",
     Value = tostring(LocalPlayer.CameraMaxZoomDistance or 128),
     Placeholder = "输入数值",
     Callback = function(input)
@@ -778,35 +777,34 @@ Tabs.AttackTab:Input({
 -- ===================== 移动设置标签页 =====================
 Tabs.MovementTab:Paragraph({
     Title = "移动参数",
-    Desc = "调整移动相关设置",
     Image = "run",
     ImageSize = 40,
     Color = "Green"
 })
 
--- 移动加速数值
+-- 移速数值
 Tabs.MovementTab:Slider({
-    Title = "移动加速强度",
-    Desc = "调整移动速度倍率（1-2000）",
+    Title = "移速强度",
+    Desc = "调整移速倍率（1-2000）",
     Value = {
         Min = 1,
         Max = 2000,
-        Default = 50,
+        Default = 200,
     },
     Callback = function(value)
         getfenv().translateSpeed = value
-        WindUI:Notify({ Title = "移动加速", Content = "强度已设置为: " .. value, Duration = 1.5 })
+        WindUI:Notify({ Title = "移速", Content = "强度已设置为: " .. value, Duration = 1.5 })
     end
 })
 
--- 移动加速开关
+-- 移速开关
 Tabs.MovementTab:Toggle({
-    Title = "移动加速开关",
-    Desc = "开启/关闭移动加速功能",
+    Title = "移速开关",
+    Desc = "开启/关闭移速功能",
     Value = false,
     Callback = function(state)
         enableTranslateAccel(state)
-        WindUI:Notify({ Title = "移动加速", Content = state and "已开启" or "已关闭", Duration = 1.5 })
+        WindUI:Notify({ Title = "移速", Content = state and "已开启" or "已关闭", Duration = 1.5 })
     end
 })
 
