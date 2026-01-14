@@ -576,7 +576,6 @@ local Window = WindUI:CreateWindow({
     User = {
         Enabled = true,
         Callback = function() print("大牛人脚本已激活") end,
-        Anonymous = true
     },
     SideBarWidth = 200,
     ScrollBarEnabled = true,
