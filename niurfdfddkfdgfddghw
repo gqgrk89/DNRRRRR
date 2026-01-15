@@ -12,8 +12,14 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = Workspace.CurrentCamera
 
--- 加载 WindUI
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+-- 加载 WindUI（兼容不同注入器）
+local success, WindUI = pcall(function()
+    return loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+end)
+if not success then
+    warn("WindUI加载失败，脚本无法运行：" .. WindUI)
+    return
+end
 
 -- 关闭摄像机震动
 pcall(function()
@@ -50,6 +56,11 @@ _G.FastAttack = _G.FastAttack ~= nil and _G.FastAttack or true
 _G.ToggleStates = _G.ToggleStates or {}
 _G.ToggleStates["自动V3"] = true -- 默认开启自动V3
 _G.AutoBuso = _G.AutoBuso or true -- 默认开启自动武装色霸气
+
+-- 补充缺失的 onCharacterAdded 函数（避免语法错误）
+local function onCharacterAdded(char)
+    -- 空函数占位，不影响原有逻辑
+end
 
 -- Helper
 local function SafeWaitForChild(parent, childName, timeout)
@@ -205,47 +216,38 @@ task.spawn(function()
     end
 end)
 
--- 自动 v4
+-- ========== 修复后的自动V4逻辑（删除重复定义，保留一处） ==========
 local autoV4Task = nil
+local autoV4State = false -- 统一管理状态
 local function callAwakeningRemote()
     local character = LocalPlayer.Character
     if not character then return end
+    
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return end
-    local Backpack = LocalPlayer:FindFirstChild("Backpack")
-    if not Backpack then return end
-    local Awakening = Backpack:FindFirstChild("Awakening")
+    
+    -- 优先从角色身上找Awakening（装备状态），再从背包找
+    local Awakening = character:FindFirstChild("Awakening") or LocalPlayer.Backpack:FindFirstChild("Awakening")
     if not Awakening then return end
-    local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
+    
+    local RemoteFunc = Awakening:FindFirstChildOfClass("RemoteFunction")
     if not RemoteFunc then return end
-    pcall(function()
-        RemoteFunc:InvokeServer(true)
+    
+    -- 增加重试机制，提升调用成功率
+    local success, result = pcall(function()
+        return RemoteFunc:InvokeServer("AwakenV4", true)
     end)
-end
-
-Tabs.AttackTab:Toggle({
-    Title = "自动V4",
-    Value = false,
-    Callback = function(state)
-        _G.ToggleStates["自动V4"] = state
-        if autoV4Task then
-            task.cancel(autoV4Task)
-            autoV4Task = nil
-        end
-        if state then
-            autoV4Task = task.spawn(function()
-                while _G.ToggleStates["自动V4"] do
-                    callAwakeningRemote()
-                    task.wait(1)
-                end
-                autoV4Task = nil
+    
+    if not success then
+        warn("V4觉醒调用失败:", result)
+        -- 失败后0.5秒重试一次
+        task.delay(0.5, function()
+            pcall(function()
+                RemoteFunc:InvokeServer("AwakenV4", true)
             end)
-            WindUI:Notify({ Title = "自动V4", Content = "已开启", Duration = 2 })
-        else
-            WindUI:Notify({ Title = "自动V4", Content = "已关闭", Duration = 2 })
-        end
+        end)
     end
-})
+end
 
 -- 绑定事件：首次加载+每次复活都触发
 local localPlayer = game.Players.LocalPlayer
@@ -705,20 +707,28 @@ Tabs.AttackTab:Toggle({
     end
 })
 
--- 自动V4开关（默认开启）
+-- 自动V4开关
 Tabs.AttackTab:Toggle({
     Title = "自动 V4",
-    Desc = "自动调用觉醒技能",
     Value = autoV4State,
     Callback = function(state)
+        _G.ToggleStates["自动V4"] = state
         autoV4State = state
-        if autoV4Task then task.cancel(autoV4Task); autoV4Task = nil end
+        
+        -- 取消原有任务
+        if autoV4Task then
+            task.cancel(autoV4Task)
+            autoV4Task = nil
+        end
+        
         if state then
+            -- 新的循环逻辑：0.98秒调用一次，提升触发频率
             autoV4Task = task.spawn(function()
                 while autoV4State do
                     callAwakeningRemote()
-                    task.wait(1)
+                    task.wait(0.98)
                 end
+                autoV4Task = nil
             end)
             WindUI:Notify({ Title = "自动V4", Content = "已开启", Duration = 1.5 })
         else
