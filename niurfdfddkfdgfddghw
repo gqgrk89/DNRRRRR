@@ -709,7 +709,7 @@ Tabs.AttackTab:Toggle({
 
 -- 自动V4开关
 Tabs.AttackTab:Toggle({
-    Title = "自动 V4",
+    Title = "自动V4",
     Value = autoV4State,
     Callback = function(state)
         _G.ToggleStates["自动V4"] = state
