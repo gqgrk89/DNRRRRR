@@ -206,54 +206,46 @@ task.spawn(function()
 end)
 
 -- 自动 v4
-local autoV4State = true -- 默认开启自动V4
 local autoV4Task = nil
 local function callAwakeningRemote()
-    -- 1. 确保获取最新的本地玩家实例（复活后实例可能刷新）
-    local localPlayer = game.Players.LocalPlayer
-    if not localPlayer then return end
-    
-    -- 2. 等待玩家加载完成（复活后可能有短暂的加载延迟）
-    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local character = LocalPlayer.Character
     if not character then return end
-    
-    -- 3. 查找背包和觉醒对象（每次调用都重新查找，避免引用失效）
-    local Backpack = localPlayer:FindFirstChild("Backpack")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return end
+    local Backpack = LocalPlayer:FindFirstChild("Backpack")
     if not Backpack then return end
-    
     local Awakening = Backpack:FindFirstChild("Awakening")
     if not Awakening then return end
-    
     local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
-    if not RemoteFunc or not RemoteFunc:IsA("RemoteFunction") then return end
-    
-    -- 4. 安全调用远程函数
-    local success, result = pcall(function() 
-        RemoteFunc:InvokeServer(true) 
+    if not RemoteFunc then return end
+    pcall(function()
+        RemoteFunc:InvokeServer(true)
     end)
-    if not success then
-        warn("调用觉醒远程函数失败：", result)
-    end
 end
 
--- 自动V4默认启动
-if autoV4State then
-    autoV4Task = task.spawn(function()
-        while autoV4State do
-            callAwakeningRemote()
-            task.wait(1)
+Tabs.AttackTab:Toggle({
+    Title = "自动V4",
+    Value = false,
+    Callback = function(state)
+        _G.ToggleStates["自动V4"] = state
+        if autoV4Task then
+            task.cancel(autoV4Task)
+            autoV4Task = nil
         end
-    end)
-end
-
--- 监听玩家复活事件（CharacterAdded 事件在复活/重生时触发）
-local function onCharacterAdded(character)
-    -- 等待角色完全加载（确保Humanoid等核心组件就绪）
-    local humanoid = character:WaitForChild("Humanoid")
-    -- 延迟1秒执行，确保背包等对象完全创建
-    task.wait(1)
-    callAwakeningRemote()
-end
+        if state then
+            autoV4Task = task.spawn(function()
+                while _G.ToggleStates["自动V4"] do
+                    callAwakeningRemote()
+                    task.wait(1)
+                end
+                autoV4Task = nil
+            end)
+            WindUI:Notify({ Title = "自动V4", Content = "已开启", Duration = 2 })
+        else
+            WindUI:Notify({ Title = "自动V4", Content = "已关闭", Duration = 2 })
+        end
+    end
+})
 
 -- 绑定事件：首次加载+每次复活都触发
 local localPlayer = game.Players.LocalPlayer
