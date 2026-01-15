@@ -617,7 +617,7 @@ do
     Tabs.MovementTab = Window:Tab({ Title = "移动设置", Icon = "run" })
     Tabs.ESPTab = Window:Tab({ Title = "ESP设置", Icon = "eye" })
     Tabs.TeleportTab = Window:Tab({ Title = "传送功能", Icon = "teleport" })
-    Tabs.ScriptsTab = Window:Tab({ Title = "外部脚本", Icon = "code" })
+    Tabs.ScriptsTab = Window:Tab({ Title = "功能2", Icon = "code" })
 end
 
 -- ===================== 战斗参数标签页 =====================
@@ -875,13 +875,14 @@ for _, btnData in ipairs(teleportButtons) do
     })
 end
 
--- ===================== 外部脚本标签页 =====================
+-- ===================== 功能2标签页 =====================
 local externalScripts = {
-    { "Aimbot 瞄准", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
+    { "Aimbot", "https://raw.githubusercontent.com/98krgqg/aimbot/refs/heads/main/aimbot" },
     { "FPS优化", "https://raw.githubusercontent.com/98krgqg/fps/refs/heads/main/111" },
     { "飞行功能", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
     { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" },
     { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" }
+    { "删除岩浆", "https://raw.githubusercontent.com/98krgqg/LAVAVAVA/refs/heads/main/NO%20LAVA" }
 }
 
 for _, scriptData in ipairs(externalScripts) do
