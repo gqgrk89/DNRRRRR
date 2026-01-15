@@ -881,8 +881,8 @@ local externalScripts = {
     { "FPS优化", "https://raw.githubusercontent.com/98krgqg/fps/refs/heads/main/111" },
     { "飞行功能", "https://raw.githubusercontent.com/98krgqg/fly/refs/heads/main/daniu" },
     { "法天象地", "https://raw.githubusercontent.com/98krgqg/ftxd/refs/heads/main/ftxd" },
-    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" }
-    { "删除岩浆", "https://raw.githubusercontent.com/98krgqg/LAVAVAVA/refs/heads/main/NO%20LAVA" }
+    { "Bypasstp", "https://raw.githubusercontent.com/98krgqg/tp/refs/heads/main/Bypass" },
+    { "删除岩浆", "https://raw.githubusercontent.com/98krgqg/LAVAVAVA/refs/heads/main/NO%20LAVA" },
 }
 
 for _, scriptData in ipairs(externalScripts) do
